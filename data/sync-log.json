@@ -1,0 +1,20 @@
+[
+  {
+    "timestamp": "2026-05-13T15:55:55.629Z",
+    "status": "success",
+    "round": 1223,
+    "message": "Google Sheets 2행 삽입 완료"
+  },
+  {
+    "timestamp": "2026-05-13T15:43:02.475Z",
+    "status": "skipped",
+    "round": 1223,
+    "message": "서비스 계정에 시트 편집 권한이 없습니다. 시트 공유 대상을 다시 확인해 주세요."
+  },
+  {
+    "timestamp": "2026-05-13T15:42:54.499Z",
+    "status": "skipped",
+    "round": 1223,
+    "message": "서비스 계정에 시트 편집 권한이 없습니다. 시트 공유 대상을 다시 확인해 주세요."
+  }
+]
