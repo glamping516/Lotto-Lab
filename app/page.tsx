@@ -1,4 +1,3 @@
-import { AdSlot } from "@/components/AdSlot";
 import { LabTabs } from "@/components/LabTabs";
 import { LatestDrawCard } from "@/components/LatestDrawCard";
 import { NumberGenerator } from "@/components/NumberGenerator";
@@ -8,6 +7,8 @@ import {
   loadLottoData,
   runBacktest
 } from "@/lib/lotto-analysis";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const data = await loadLottoData();
@@ -27,35 +28,27 @@ export default async function HomePage() {
   ];
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <AdSlot title="상단 배너 광고 영역" envKey="NEXT_PUBLIC_AD_SLOT_TOP" />
-
-      <section className="panel-gold relative overflow-hidden px-6 py-10 lg:px-10">
-        <div className="absolute -left-12 top-0 h-40 w-40 rounded-full bg-gold-300/15 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="relative z-10">
-          <p className="text-xs uppercase tracking-[0.45em] text-gold-300/80">Lotto Signal Lab</p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
-            <span className="gold-text">Lotto Signal Lab</span>
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg text-white/70">
-            로또6/45 역대 당첨번호 통계 분석 · 이상징후 탐지 · 번호 조합 추출
-          </p>
+    <main className="site-shell">
+      <header className="site-header">
+        <a className="brand" href="/"><span className="brand-mark">6</span>LOTTO LAB</a>
+        <nav aria-label="주 메뉴"><a href="#studio">추첨 스튜디오</a><a href="#analysis">데이터 분석</a></nav>
+      </header>
+      <section className="hero">
+        <div>
+          <p className="eyebrow">A LITTLE CHANCE, A NEW POSSIBILITY</p>
+          <h1>여섯 개의 숫자.<br/>새로운 가능성.</h1>
+          <p className="section-copy">차분하게 살펴보고, 나만의 행운을 추첨하세요.</p>
         </div>
+        <p className="hero-note">OFFICIAL DRAW DATA<br/>매주 일요일 09:00 · 한국시간 갱신</p>
       </section>
-
-      {latest ? <LatestDrawCard draw={latest} /> : null}
-
       <NumberGenerator />
-
-      <AdSlot title="본문 중간 광고 영역" envKey="NEXT_PUBLIC_AD_SLOT_MIDDLE" />
-
+      {latest ? <LatestDrawCard draw={latest} /> : null}
+      <div id="analysis" className="analysis-heading"><div><p className="eyebrow">02 / THE NUMBERS BEHIND</p><h2>숫자에 담긴 흐름</h2></div><span className="section-copy">{data.length.toLocaleString()}개 회차 분석</span></div>
       <LabTabs snapshots={snapshots} anomalyReport={anomalyReport} backtests={backtests} />
-
-      <AdSlot title="하단 광고 영역" envKey="NEXT_PUBLIC_AD_SLOT_BOTTOM" />
-
-      <footer className="panel p-6 text-center text-sm text-white/60">
-        본 서비스는 통계/오락 목적이며 당첨을 보장하지 않습니다. 동행복권과 무관한 개인 프로젝트입니다.
+      <footer className="site-footer">
+        <span>LOTTO LAB · 작은 가능성을 위한 공간</span>
+        <span>통계·오락 목적의 서비스입니다. 모든 조합의 당첨 확률은 동일하며, 당첨을 보장하지 않습니다.<br/>동행복권과 무관한 개인 프로젝트입니다.</span>
+        <a href="/privacy">개인정보 처리방침</a>
       </footer>
     </main>
   );

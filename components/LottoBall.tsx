@@ -1,12 +1,12 @@
 import { cn, getBallTone } from "@/lib/utils";
 
 const toneClasses: Record<string, string> = {
-  yellow: "from-yellow-200 via-yellow-400 to-amber-600 text-stone-900",
-  blue: "from-sky-200 via-blue-400 to-blue-700 text-white",
-  red: "from-rose-200 via-red-400 to-red-700 text-white",
-  slate: "from-slate-100 via-slate-400 to-slate-700 text-white",
-  green: "from-lime-100 via-emerald-400 to-green-700 text-white",
-  bonus: "from-fuchsia-200 via-violet-400 to-fuchsia-700 text-white"
+  yellow: "from-[#dbc784] via-[#bda04f] to-[#826731] text-white",
+  blue: "from-[#94b7ca] via-[#638ba3] to-[#3e5c73] text-white",
+  red: "from-[#d6a59c] via-[#b4766b] to-[#744d47] text-white",
+  slate: "from-[#b9c3c7] via-[#828e96] to-[#4d5e65] text-white",
+  green: "from-[#a5c5b1] via-[#6f9a82] to-[#466854] text-white",
+  bonus: "from-[#a5c5b1] via-[#6f9a82] to-[#466854] text-white"
 };
 
 type LottoBallProps = {

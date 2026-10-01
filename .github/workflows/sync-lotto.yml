@@ -1,0 +1,30 @@
+name: Weekly official lotto data
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Sunday 09:00 Asia/Seoul
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: lotto-data-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run test
+      - run: npm run sync-data
+      - name: Persist verified draws
+        run: |
+          if ! git diff --quiet -- data/lotto.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/lotto.json
+            git commit -m "data: sync official lotto draws"
+            git push
+          fi
