@@ -25,10 +25,8 @@ export function LottoMachine({ active = false, drawn = [] }: { active?: boolean;
     const metal = new THREE.MeshStandardMaterial({color:0x697a7f,metalness:0.8,roughness:0.28});
     const glass = new THREE.MeshPhysicalMaterial({color:0xc2ded5,transparent:true,opacity:0.1,metalness:0.1,roughness:0.05,side:THREE.DoubleSide,depthWrite:false});
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.86,48,32),glass));
-    for (const tilt of [0,Math.PI/2]) {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.89,0.025,12,96),metal);
-      ring.rotation.y=tilt; scene.add(ring);
-    }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.89,0.025,12,96),metal);
+    scene.add(ring);
     const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.65,0.65,48),metal);
     stand.position.y=-2.06; scene.add(stand);
     const base = new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.3,0.18,64),metal);
@@ -59,7 +57,9 @@ export function LottoMachine({ active = false, drawn = [] }: { active?: boolean;
       balls.forEach(({ball,phase,radius},i)=>{
         const index=state.current.drawn.indexOf(i+1);
         if(index>=0) {
-          ball.position.lerp(new THREE.Vector3(-1.13+index*0.45,-1.93,1.35),0.14);ball.rotation.set(0,-Math.PI/2,0);
+          ball.position.lerp(new THREE.Vector3(-1.13+index*0.45,-1.93,1.35),0.14);
+          // The number at texture u=0.25 faces local +Z; keep it facing the viewer.
+          ball.lookAt(camera.position);
         } else {
           const a=time+phase, b=time*0.71+phase*0.63;
           ball.position.set(Math.cos(a)*Math.sin(b)*radius,Math.cos(b)*radius,Math.sin(a)*Math.sin(b)*radius);
