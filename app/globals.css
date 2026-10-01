@@ -60,6 +60,15 @@ button:disabled {cursor:wait;opacity:.55;}
 .result-row p {font-size:11px;color:#8fa79b;margin-top:8px;}
 .result-balls {display:flex;gap:8px;}
 .error-message {font-size:12px;color:#e7aaa4;margin-top:15px;}
+.repeat-experiment {margin-top:22px;padding-top:22px;border-top:1px solid #344844;}
+.repeat-button {width:100%;border:1px solid #86ae9b;border-radius:10px;color:#c8e3d5;padding:14px 16px;display:flex;justify-content:space-between;gap:8px;font-size:13px;}
+.repeat-button:hover:not(:disabled) {background:#a5cbbd14;}
+.experiment-note {font-size:11px;color:#8fa79b;line-height:1.8;margin-top:12px;}
+.experiment-status {background:#12201b;border:1px solid #345345;border-radius:10px;margin-top:14px;padding:14px;font-size:12px;line-height:1.9;color:#b8d3c5;}
+.experiment-status strong {display:block;color:#d4ebdf;font-size:15px;}
+.experiment-meta {font-size:10px;color:#89a798;margin-top:10px;}
+.experiment-status progress {width:100%;height:5px;accent-color:#b4d2c3;margin-top:12px;}
+.cancel-experiment {width:100%;font-size:12px;color:#c0d1c8;border:1px solid #4b6158;border-radius:8px;padding:10px;margin-top:10px;}
 .latest-card {display:flex;justify-content:space-between;align-items:center;gap:24px;padding:26px 30px;margin:24px 0 36px;}
 .latest-card h2 {font-size:19px;margin:8px 0;}
 .latest-card .latest-meta {font-size:11px;color:#92a6a2;}

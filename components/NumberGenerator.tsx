@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LottoMachine } from "./LottoMachine";
 import { LottoBall } from "./LottoBall";
+import { RepeatDrawExperiment } from "./RepeatDrawExperiment";
 import { StrategyKey } from "@/lib/types";
 type Game = {numbers:number[]; explanation:string};
 const options: [StrategyKey,string][] = [
@@ -19,6 +20,7 @@ export function NumberGenerator() {
   const [error,setError]=useState("");
   const [round,setRound]=useState<number>();
   const [copied,setCopied]=useState(false);
+  const [experimentBusy,setExperimentBusy]=useState(false);
   const controller=useRef<AbortController | null>(null);
   useEffect(()=>()=>controller.current?.abort(),[]);
   useEffect(()=>{
@@ -27,7 +29,7 @@ export function NumberGenerator() {
     const timers=Array.from({length:games.length*6},(_,i)=>setTimeout(()=>setShown(i+1),reduce?0:1400+i*300));
     return ()=>timers.forEach(clearTimeout);
   },[games]);
-  const drawing= pending || (games.length>0 && shown<games.length*6);
+  const drawing= experimentBusy || pending || (games.length>0 && shown<games.length*6);
   const current=Math.min(Math.floor(Math.max(0,shown-1)/6),games.length-1);
   const drawn=current>=0?games[current].numbers.slice(0,shown-current*6):[];
   async function generate() {
@@ -58,6 +60,9 @@ export function NumberGenerator() {
       <label className="range-label">분석 범위 <span>최근 {recentWindow}회</span><input disabled={drawing} type="range" min={20} max={200} step={10} value={recentWindow} onChange={e=>setWindow(Number(e.target.value))}/></label>
       <button className="generate-button" disabled={drawing} onClick={generate}>{drawing?"추첨 진행 중…":"추첨 시작하기"}<span>↗</span></button>
       <p className="control-note">중복 없는 6개 번호 · 통계 기반 조합</p>
+      <RepeatDrawExperiment disabled={drawing && !experimentBusy} onBusy={setExperimentBusy}
+        onStart={()=>{setGames([]);setShown(0);setError("");setCopied(false);}}
+        onResult={(numbers,dataRound,attempts)=>{setRound(dataRound);setGames([{numbers,explanation:`과거 당첨 조합과 ${attempts.toLocaleString("ko-KR")}번째에 일치한 뒤, 새로 ${attempts.toLocaleString("ko-KR")}번 추첨한 마지막 조합입니다.`}]);}}/>
       {error&&<p role="alert" className="error-message">{error}</p>}
     </div>
     {games.length>0&&<div className="results" aria-live="polite">
