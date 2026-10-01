@@ -1,133 +1,26 @@
-# Lotto Signal Lab
+# Lotto Lab
 
-Next.js + TypeScript + Tailwind CSS 기반의 로또6/45 통계 분석, 이상징후 탐지, 번호 조합 추출 웹사이트입니다.
+차분한 슬레이트·민트 톤의 로또 통계 및 3D 추첨 스튜디오입니다. Three.js로 투명 구형 추첨기와 45개 번호공을 렌더링하고, 선택된 조합을 한 공씩 공개합니다. 1·5·10게임, 9개 전략, 최근 20~200회 분석, 번호 복사를 지원합니다. 모든 조합의 당첨 확률은 동일합니다.
 
-본 서비스는 통계/오락 목적이며 당첨을 보장하지 않습니다. 동행복권과 무관한 개인 프로젝트입니다.
+## 실행
 
-## 설치 방법
+Node.js 22 이상에서 `npm ci`, `npm run dev`를 실행합니다. 검증은 `npm test`, `npm run build`입니다. `npm run prepare-data`는 엑셀에서 데이터를 다시 만드는 수동 명령입니다. 최신 JSON을 덮어쓰지 않도록 설치 시 자동 실행하지 않습니다.
 
-1. Node.js 20+ 또는 22+ 환경을 준비합니다.
-2. 프로젝트 루트에서 의존성을 설치합니다.
+## 매주 일요일 오전 9시 갱신
 
-```bash
-npm install
-```
+`.github/workflows/sync-lotto.yml`이 일요일 00:00 UTC(09:00 Asia/Seoul)에 동행복권 공식 회차별 API를 조회합니다. 마지막 저장 회차 이후 빠진 모든 회차를 추가하고, 6개 번호·보너스의 범위와 중복 및 회차 연속성을 검증합니다. 조회 실패 또는 누락 시 파일을 변경하지 않고 작업을 실패시킵니다. 성공 시 `data/lotto.json`을 GitHub 저장소에 커밋합니다. 수동 실행도 가능합니다.
 
-## `lotto.xlsx` 넣는 위치
+워크플로가 기본 브랜치에 병합되어 있어야 예약 실행됩니다. GitHub Actions가 활성화되어 있고 워크플로의 contents 쓰기를 허용해야 합니다. 기본 브랜치 보호 규칙이 봇의 직접 커밋을 차단하면 데이터 PR 방식으로 별도 설정이 필요합니다. GitHub 예약 실행은 혼잡 시 지연될 수 있어 정확한 초 단위 실행을 보장하지 않습니다. 공개 저장소의 예약 작업은 60일간 활동이 없으면 비활성화될 수 있습니다.
 
-- 기본 위치: [data/lotto.xlsx](C:/Users/ILEX/Documents/New%20project%203/data/lotto.xlsx)
-- 또는 프로젝트 루트의 `lotto.xlsx`를 `data/lotto.xlsx`로 옮겨 사용해도 됩니다.
-- 현재 프로젝트는 업로드한 엑셀 파일을 `data/lotto.xlsx`로 복사해 둔 상태입니다.
+Vercel에서는 서버 파일에 데이터를 쓰는 Cron을 사용하지 않습니다. 앱이 저장소의 영구 JSON을 최대 5분 간격으로 다시 조회하므로 봇 커밋이 재배포를 발생시키지 않아도 최신 통계와 번호 생성에 반영됩니다. 조회 실패 시 배포에 포함된 데이터로 동작합니다. 기본 데이터 주소는 `https://raw.githubusercontent.com/glamping516/Lotto-Lab/main/data/lotto.json`입니다. 다른 저장소 또는 브랜치를 사용한다면 `LOTTO_DATA_URL`에 공개 JSON 주소를 설정합니다.
 
-## 초기 데이터 변환 방법
+## 기존 관리자 기능
 
-엑셀에서 JSON으로 변환:
+`/admin`과 `/api/sync-lotto`의 수동 파일 저장 기능은 쓰기 가능한 자체 서버에서 사용할 수 있습니다. Vercel에서는 영구 파일 저장이 불가능하므로 GitHub Actions 갱신을 사용하세요. 관리자 API의 `CRON_SECRET`과 선택적 Google Sheets 연결은 `.env.example`을 참고합니다. Google Sheets는 별도 내보내기 기능이며 사이트의 기준 데이터는 JSON입니다.
 
-```bash
-npm run prepare-data
-```
+## 화면 접근성
 
-- 변환 대상 시트는 기본적으로 `Lotto`를 우선 사용합니다.
-- `Lotto` 시트가 없으면 첫 번째 시트를 사용합니다.
-- 결과 파일은 [data/lotto.json](C:/Users/ILEX/Documents/New%20project%203/data/lotto.json) 입니다.
+작은 화면에서 세로 배치로 전환합니다. 동작 줄이기 설정을 존중하며, WebGL 미지원 환경에서도 번호 생성 결과를 확인할 수 있습니다. 추첨 진행 중에는 연속 클릭을 막고 실패 메시지와 재시도를 제공합니다.
 
-## 개발 서버 실행 방법
-
-```bash
-npm run dev
-```
-
-실행 후 기본 주소:
-
-- [http://localhost:3000](http://localhost:3000)
-
-## Vercel 배포 방법
-
-1. Git 저장소를 Vercel에 연결합니다.
-2. Environment Variables에 아래 값을 설정합니다.
-3. 빌드 커맨드는 기본값 `next build`를 사용합니다.
-4. `vercel.json`의 Cron 설정을 함께 배포합니다.
-
-## 환경변수 설정 방법
-
-예시는 [.env.example](C:/Users/ILEX/Documents/New%20project%203/.env.example) 를 참고합니다.
-
-- `CRON_SECRET`
-- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-- `GOOGLE_PRIVATE_KEY`
-- `GOOGLE_SHEET_ID`
-- `GOOGLE_SHEET_GID=0`
-- `NEXT_PUBLIC_ADSENSE_CLIENT_ID`
-- `NEXT_PUBLIC_AD_SLOT_TOP`
-- `NEXT_PUBLIC_AD_SLOT_MIDDLE`
-- `NEXT_PUBLIC_AD_SLOT_BOTTOM`
-
-## Google Sheets API 설정 방법
-
-1. Google Cloud에서 Sheets API를 활성화합니다.
-2. 서비스 계정을 생성합니다.
-3. 서비스 계정 이메일을 대상 스프레드시트에 편집자로 공유합니다.
-4. 서비스 계정 이메일과 private key를 환경변수로 설정합니다.
-5. 원본 스프레드시트의 `spreadsheetId`를 `GOOGLE_SHEET_ID`에 넣습니다.
-
-중요:
-
-- 공개보기용 `pubhtml` URL만으로는 쓰기 작업이 불가능합니다.
-- 신규 회차를 2행에 삽입하려면 반드시 원본 `GOOGLE_SHEET_ID`가 필요합니다.
-
-공개보기 URL 참고:
-
-- [Google Sheets pubhtml](https://docs.google.com/spreadsheets/d/e/2PACX-1vQqbh9B12a6_PS0TMLjnOpqXNIoQc3To5jHo5aVJqof-qzNwZH12BFWEgvQP0xTGWiC0m6SN3-CcjSU/pubhtml?gid=0&single=true)
-
-## Cron 동작 시간 설명
-
-Vercel Cron은 토요일 한국시간 기준 다음 시점에 최신 결과를 재확인합니다.
-
-- 20:45 KST
-- 20:55 KST
-- 21:05 KST
-- 21:15 KST
-
-`vercel.json`에는 UTC 기준으로 다음 스케줄을 넣었습니다.
-
-- `45 11 * * 6`
-- `55 11 * * 6`
-- `5 12 * * 6`
-- `15 12 * * 6`
-
-## API 요약
-
-- `GET /api/latest`
-- `GET /api/stats`
-- `POST /api/generate`
-- `POST /api/sync-lotto`
-
-`/api/sync-lotto`는 `CRON_SECRET` 검증이 필요합니다.
-
-지원 방식:
-
-- `x-cron-secret` 헤더
-- `Authorization: Bearer <CRON_SECRET>`
-- `?secret=...` 쿼리
-
-## 관리자 페이지
-
-- 주소: `/admin?secret=CRON_SECRET`
-- 기능:
-  - 현재 최신 회차 확인
-  - 수동 동기화
-  - 특정 회차 직접 입력
-  - `lotto.json` 다운로드
-  - Google Sheets 동기화 테스트
-  - 최근 동기화 로그 확인
-
-## 구현 메모
-
-- 정적 데이터는 [data/lotto.json](C:/Users/ILEX/Documents/New%20project%203/data/lotto.json) 을 사용합니다.
-- 자동 동기화는 `dhlottery` JSON API를 우선 조회하고, 실패 시 결과 페이지를 보조 힌트로 사용합니다.
-- Google Sheets 쓰기는 서버 사이드에서만 수행합니다.
-- 환경변수가 비어 있어도 앱은 죽지 않고 관리자에 안내 메시지를 남깁니다.
-
-## 면책 문구
-
-본 서비스는 통계/오락 목적이며 당첨을 보장하지 않습니다. 동행복권과 무관한 개인 프로젝트입니다.
+공식 데이터 출처: https://www.dhlottery.co.kr/lt645/winNumber
+예약 작업 제약: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule

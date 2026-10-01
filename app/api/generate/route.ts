@@ -33,5 +33,5 @@ export async function POST(request: NextRequest) {
     recentWindow
   });
 
-  return NextResponse.json({ games });
+  return NextResponse.json({ games, dataRound: data[0]?.round });
 }
