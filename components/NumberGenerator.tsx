@@ -3,17 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { LottoMachine } from "./LottoMachine";
 import { LottoBall } from "./LottoBall";
 import { RepeatDrawExperiment } from "./RepeatDrawExperiment";
-import { StrategyKey } from "@/lib/types";
 type Game = {numbers:number[]; explanation:string};
-const options: [StrategyKey,string][] = [
-  ["mixed","혼합 전략"],["random","완전 랜덤"],["balanced","균형 조합"],
-  ["hot","많이 나온 번호"],["cold","적게 나온 번호"],["recentWeighted","최근 회차 가중치"],
-  ["overdue","장기 미출현"],["pairBased","번호쌍 기반"],["anomalyWeighted","통계 편차 가중치"]
-];
 export function NumberGenerator() {
-  const [strategy,setStrategy]=useState<StrategyKey>("mixed");
   const [count,setCount]=useState(1);
-  const [recentWindow,setWindow]=useState(100);
   const [pending,setPending]=useState(false);
   const [games,setGames]=useState<Game[]>([]);
   const [shown,setShown]=useState(0);
@@ -36,7 +28,7 @@ export function NumberGenerator() {
     setPending(true);setError("");setGames([]);setShown(0);setCopied(false);
     controller.current=new AbortController();
     try {
-      const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({strategy,count,recentWindow}),signal:controller.current.signal});
+      const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({count}),signal:controller.current.signal});
       if(!response.ok) throw new Error("번호를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       const payload=await response.json();
       if(!Array.isArray(payload.games)||!payload.games.length) throw new Error("추첨 결과를 확인할 수 없습니다.");
@@ -55,9 +47,8 @@ export function NumberGenerator() {
       <p className="eyebrow">YOUR NEXT SIX</p>
       <h2>가능성을 돌려보세요.</h2>
       <p className="section-copy">공을 섞고, 하나씩 꺼내고.<br/>최신 당첨 데이터를 바탕으로 나만의 조합을 만듭니다.</p>
-      <label>추출 방식<select disabled={drawing} value={strategy} onChange={e=>setStrategy(e.target.value as StrategyKey)}>{options.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+      <p className="fixed-strategy">최근 200회 기준 · 검증 결과에 따라 자동 추첨</p>
       <label>게임 수<div className="count-options">{[1,5,10].map(n=><button key={n} disabled={drawing} className={count===n?"selected":""} onClick={()=>setCount(n)} aria-pressed={count===n}>{n} 게임</button>)}</div></label>
-      <label className="range-label">분석 범위 <span>최근 {recentWindow}회</span><input disabled={drawing} type="range" min={20} max={200} step={10} value={recentWindow} onChange={e=>setWindow(Number(e.target.value))}/></label>
       <button className="generate-button" disabled={drawing} onClick={generate}>{drawing?"추첨 진행 중…":"추첨 시작하기"}<span>↗</span></button>
       <p className="control-note">중복 없는 6개 번호 · 통계 기반 조합</p>
       <RepeatDrawExperiment disabled={drawing && !experimentBusy} onBusy={setExperimentBusy}

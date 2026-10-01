@@ -51,6 +51,7 @@ button:disabled {cursor:wait;opacity:.55;}
 .generate-button {width:100%;display:flex;justify-content:space-between;background:#b4d2c3;color:#172924;border-radius:10px;padding:16px 20px;font-size:14px;font-weight:700;margin-top:30px;}
 .generate-button:hover {background:#cce4d7;}
 .control-note {text-align:center;font-size:10px;color:#708e83;margin-top:13px;}
+.fixed-strategy {margin-top:24px;border:1px solid #3d554c;background:#a5cbbd0a;border-radius:9px;padding:13px 16px;color:#b9d3c5;font-size:12px;}
 .results {grid-column:1/-1;border-top:1px solid #344844;padding:26px;}
 .results-heading {display:flex;align-items:center;gap:15px;margin-bottom:16px;}
 .results-heading h3 {font-weight:600;}

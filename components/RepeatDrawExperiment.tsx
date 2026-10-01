@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { ExperimentState, TargetDraw } from "@/lib/repeat-draw";
+import policy from "@/data/draw-policy.json";
 
 type Props = {
   disabled: boolean;
@@ -16,8 +17,8 @@ export function RepeatDrawExperiment({disabled,onBusy,onStart,onResult}:Props) {
   const [status,setStatus]=useState<"idle"|"loading"|"running"|"complete"|"cancelled"|"error">("idle");
   const [state,setState]=useState<ExperimentState|null>(null);
   const [round,setRound]=useState(0);
-  const [targetCount,setTargetCount]=useState(100);
-  const [uniqueCount,setUniqueCount]=useState(100);
+  const [targetCount,setTargetCount]=useState(200);
+  const [uniqueCount,setUniqueCount]=useState(200);
   const [error,setError]=useState("");
   useEffect(()=>()=>{request.current?.abort();worker.current?.terminate();},[]);
   const busy=status==="loading"||status==="running";
@@ -34,7 +35,7 @@ export function RepeatDrawExperiment({disabled,onBusy,onStart,onResult}:Props) {
     try {
       const response=await fetch("/api/repeat-draw",{cache:"no-store",signal:request.current.signal});
       if(!response.ok) throw new Error("최근 당첨 데이터를 불러오지 못했습니다. 다시 시도해 주세요.");
-      const payload=await response.json() as {targets:TargetDraw[];dataRound:number;uniqueCombinations:number};
+      const payload=await response.json() as {targets:TargetDraw[];dataRound:number;uniqueCombinations:number;training:{numbers:number[]}[];policy:typeof policy};
       if(!running.current) return;
       setRound(payload.dataRound);setTargetCount(payload.targets.length);setUniqueCount(payload.uniqueCombinations);
       const instance=new Worker(new URL("../lib/repeat-draw.worker.ts",import.meta.url));
@@ -54,7 +55,7 @@ export function RepeatDrawExperiment({disabled,onBusy,onStart,onResult}:Props) {
           setStatus("complete");onBusy(false);onResult(result.finalNumbers,payload.dataRound,result.attempts);
         }
       };
-      setStatus("running");instance.postMessage({targets:payload.targets});
+      setStatus("running");instance.postMessage({targets:payload.targets,training:payload.training,policy:payload.policy});
     } catch(e) {
       if(!running.current) return;
       running.current=false;onBusy(false);setStatus("error");
@@ -64,7 +65,7 @@ export function RepeatDrawExperiment({disabled,onBusy,onStart,onResult}:Props) {
   const matched=state&&state.matchedRounds.length>0;
   return <div className="repeat-experiment">
     <button type="button" className="repeat-button" disabled={disabled||busy} onClick={start}>당첨번호 나올 때까지 뽑기 <span>↻</span></button>
-    <p className="experiment-note">최근 100회 당첨 조합과 비교하는 완전 랜덤 실험입니다.<br/>일치까지 실제로 반복하고, 같은 횟수만큼 다시 뽑아 마지막 조합을 표시합니다.</p>
+    <p className="experiment-note">최근 200회 당첨 조합과 비교합니다.<br/>일반 추첨과 같은 고정 전략으로 반복하고, 같은 횟수만큼 다시 뽑아 마지막 조합을 표시합니다.</p>
     {status!=="idle"&&<div className="experiment-status" role="status" aria-live="polite">
       {status==="loading"&&<p>최근 당첨번호를 불러오고 있습니다…</p>}
       {state?.phase==="search"&&<p>{format(state.attempts)}회 추첨 · {status==="cancelled"?"중단":"과거 당첨 조합 찾는 중"}</p>}
@@ -75,7 +76,7 @@ export function RepeatDrawExperiment({disabled,onBusy,onStart,onResult}:Props) {
       {state?.phase==="replay"&&busy&&<><progress aria-label="다시 추첨 진행률" max={state.attempts} value={state.repeated}/><p>{format(state.repeated)} / {format(state.attempts)}회 재추첨</p></>}
       {status==="cancelled"&&<p>추첨을 중단했습니다. 다시 실행하면 1회부터 시작합니다.</p>}
       {status==="error"&&<p className="error-message">{error}</p>}
-      {round>0&&<p className="experiment-meta">{round}회 기준 최근 {targetCount}회 · 서로 다른 조합 {uniqueCount}개<br/>일치까지 평균 약 {format(Math.round(8145060/uniqueCount))}회 · 실제 당첨을 의미하지 않습니다.</p>}
+      {round>0&&<p className="experiment-meta">{round}회 기준 최근 {targetCount}회 · 서로 다른 조합 {uniqueCount}개<br/>{policy.benchmarkRound}회 기준 100회 실험 평균 {format(Math.round(policy.benchmarkMean))}회 · 실제 당첨을 의미하지 않습니다.</p>}
     </div>}
     {busy&&<button type="button" className="cancel-experiment" onClick={stop}>추첨 중단</button>}
   </div>;

@@ -1,13 +1,17 @@
-import { DrawExperiment, TargetDraw } from "./repeat-draw";
+import { DrawExperiment, TargetDraw, createCryptoRandom } from "./repeat-draw";
+import { createStrategySampler } from "./strategy-sampler";
+import type { StrategyKey } from "./types";
 
 // Keep both real loops off the UI thread. Only counters and final balls are sent.
 const worker = self as unknown as {
-  onmessage: ((event: MessageEvent<{targets:TargetDraw[]}>)=>void) | null;
+  onmessage: ((event: MessageEvent<{targets:TargetDraw[];training:{numbers:number[]}[];policy:{strategy:StrategyKey;analysisWindow:number}}>)=>void) | null;
   postMessage: (message:unknown)=>void;
 };
 worker.onmessage = event => {
   try {
-    const experiment = new DrawExperiment(event.data.targets);
+    const {targets,training,policy}=event.data;
+    const draw=createStrategySampler(training,policy.strategy,policy.analysisWindow,createCryptoRandom());
+    const experiment = new DrawExperiment(targets,draw);
     const run = () => {
       try {
         const state=experiment.step();

@@ -1,0 +1,9 @@
+{
+  "strategy": "pairBased",
+  "label": "번호쌍 기반",
+  "analysisWindow": 200,
+  "targetWindow": 200,
+  "benchmarkRound": 1243,
+  "benchmarkMean": 17502.36,
+  "trialsPerStrategy": 100
+}

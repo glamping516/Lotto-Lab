@@ -8,7 +8,8 @@
     "start": "next start",
     "prepare-data": "node scripts/convert-lotto-data.mjs",
     "sync-data": "node scripts/sync-lotto.mjs",
-    "test": "node --test scripts/*.test.mjs"
+    "test": "node --test scripts/*.test.mjs",
+    "benchmark-strategies": "node scripts/benchmark-strategies.mjs"
   },
   "dependencies": {
     "googleapis": "^150.0.1",

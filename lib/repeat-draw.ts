@@ -35,12 +35,20 @@ export function combinationKey(numbers: number[]) {
   return [...numbers].sort((a,b)=>a-b).join(",");
 }
 
+export function createCryptoRandom() {
+  const buffer=new Uint32Array(4096);
+  let cursor=buffer.length;
+  return ()=>{
+    if(cursor===buffer.length){crypto.getRandomValues(buffer);cursor=0;}
+    return buffer[cursor++]/0x100000000;
+  };
+}
 export class DrawExperiment {
   state: ExperimentState = {phase:"search",attempts:0,repeated:0,matchedNumbers:[],matchedRounds:[],finalNumbers:[]};
   targets = new Map<string,number[]>();
   draw: () => number[];
   constructor(targets: TargetDraw[], draw = createUniformDraw()) {
-    if (!targets.length || targets.length > 100) throw new Error("최근 100회 이내 데이터가 필요합니다.");
+    if (!targets.length || targets.length > 200) throw new Error("최근 200회 이내 데이터가 필요합니다.");
     targets.forEach(target => {
       if (!Number.isInteger(target.round) || target.round < 1 || target.numbers.length !== 6 ||
         new Set(target.numbers).size !== 6 || target.numbers.some(n=>!Number.isInteger(n)||n<1||n>45)) {
