@@ -65,13 +65,31 @@ export async function convertXlsxToJson() {
 }
 
 export async function loadLottoData() {
+  let local: LottoDraw[];
   try {
     const raw = await fs.readFile(JSON_PATH, "utf8");
-    const data = JSON.parse(raw) as LottoDraw[];
-    return data.sort((a, b) => b.round - a.round);
+    local = JSON.parse(raw) as LottoDraw[];
   } catch {
-    return convertXlsxToJson();
+    local = await convertXlsxToJson();
   }
+  local.sort((a,b)=>b.round-a.round);
+  // Read the durable weekly update without depending on a redeploy.
+  if (process.env.VERCEL || process.env.LOTTO_DATA_URL) {
+    try {
+      const response = await fetch(process.env.LOTTO_DATA_URL ??
+        "https://raw.githubusercontent.com/glamping516/Lotto-Lab/main/data/lotto.json",
+        { next: { revalidate: 300 }, signal: AbortSignal.timeout(5000) });
+      if (!response.ok) throw new Error("데이터 조회 실패");
+      const remote = await response.json() as LottoDraw[];
+      if (!Array.isArray(remote) || !remote.length) throw new Error("빈 데이터");
+      remote.forEach(validateDraw);
+      remote.sort((a,b)=>b.round-a.round);
+      if (remote[0].round >= (local[0]?.round ?? 0)) return remote;
+    } catch (error) {
+      console.warn("Using bundled lotto data:", error instanceof Error ? error.message : error);
+    }
+  }
+  return local;
 }
 
 export async function saveLottoData(data: LottoDraw[]) {

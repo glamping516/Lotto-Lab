@@ -4,31 +4,8 @@ import {
   calculatePairFrequency
 } from "@/lib/lotto-analysis";
 import { GeneratedGame, LottoDraw, StrategyKey, WeightedItem } from "@/lib/types";
-import { clamp, sortNumbers, sumNumbers } from "@/lib/utils";
-
-function normalizeWeights(items: WeightedItem[]): WeightedItem[] {
-  const adjusted = items.map((item) => ({
-    ...item,
-    weight: item.weight <= 0 ? 0.01 : item.weight
-  }));
-  const total = adjusted.reduce((sum, item) => sum + item.weight, 0);
-  return adjusted.map((item) => ({
-    ...item,
-    weight: item.weight / total
-  }));
-}
-
-function weightedPick(items: WeightedItem[], excluded = new Set<number>()) {
-  const pool = normalizeWeights(items.filter((item) => !excluded.has(item.number)));
-  let cursor = Math.random();
-  for (const item of pool) {
-    cursor -= item.weight;
-    if (cursor <= 0) {
-      return item.number;
-    }
-  }
-  return pool[pool.length - 1]?.number ?? 1;
-}
+import { clamp, sumNumbers } from "@/lib/utils";
+import { createWeightedSampler } from "@/lib/strategy-sampler";
 
 function makeUniformWeights(): WeightedItem[] {
   return Array.from({ length: 45 }, (_, index) => ({
@@ -47,14 +24,12 @@ function buildWeightedGames(
   strategy: StrategyKey,
   explanation: string
 ): GeneratedGame[] {
+  const weights=Array.from({length:45},(_,i)=>items.find(item=>item.number===i+1)?.weight??0.01);
+  const draw=createWeightedSampler(weights);
   return Array.from({ length: count }, () => {
-    const selected = new Set<number>();
-    while (selected.size < 6) {
-      selected.add(weightedPick(items, selected));
-    }
     return {
       strategy,
-      numbers: sortNumbers(Array.from(selected)),
+      numbers: draw(),
       explanation
     };
   });

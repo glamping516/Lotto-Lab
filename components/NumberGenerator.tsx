@@ -1,170 +1,64 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
-
-import { LottoBall } from "@/components/LottoBall";
-import { StrategyKey } from "@/lib/types";
-
-type ResultGame = {
-  strategy: StrategyKey;
-  numbers: number[];
-  explanation: string;
-};
-
-const strategyOptions: Array<{
-  value: StrategyKey;
-  label: string;
-  description: string;
-}> = [
-  { value: "random", label: "완전 랜덤", description: "1~45에서 균등하게 추출" },
-  { value: "hot", label: "많이 나온 번호", description: "최근 자주 나온 번호에 가중치" },
-  { value: "cold", label: "적게 나온 번호", description: "최근 덜 나온 번호에 가중치" },
-  { value: "recentWeighted", label: "최근 N회 가중치", description: "최신 회차 반영 비중 강화" },
-  { value: "overdue", label: "장기 미출현", description: "오래 안 나온 번호 우선 반영" },
-  { value: "balanced", label: "균형 조합", description: "홀짝, 고저, 합계 밸런스 중심" },
-  { value: "pairBased", label: "번호쌍 기반", description: "자주 같이 나온 조합 일부 반영" },
-  { value: "anomalyWeighted", label: "이상징후 가중치", description: "통계 편차 신호 반영" },
-  { value: "mixed", label: "혼합 전략", description: "여러 전략을 섞은 실험형 조합" }
-];
-
-const selectClassName =
-  "mt-3 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white outline-none";
-
+import { useEffect, useRef, useState } from "react";
+import { LottoMachine } from "./LottoMachine";
+import { LottoBall } from "./LottoBall";
+import { RepeatDrawExperiment } from "./RepeatDrawExperiment";
+type Game = {numbers:number[]; explanation:string};
 export function NumberGenerator() {
-  const [strategy, setStrategy] = useState<StrategyKey>("mixed");
-  const [count, setCount] = useState(5);
-  const [recentWindow, setRecentWindow] = useState(100);
-  const [pending, setPending] = useState(false);
-  const [results, setResults] = useState<ResultGame[]>([]);
-  const [revealed, setRevealed] = useState(0);
-
-  const selectedStrategy = useMemo(
-    () => strategyOptions.find((option) => option.value === strategy),
-    [strategy]
-  );
-
-  useEffect(() => {
-    if (!results.length) {
-      return;
-    }
-
-    setRevealed(0);
-    const timers = results.map((_, index) =>
-      window.setTimeout(() => setRevealed(index + 1), 550 * (index + 1))
-    );
-
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [results]);
-
-  async function handleGenerate() {
-    setPending(true);
+  const [count,setCount]=useState(1);
+  const [pending,setPending]=useState(false);
+  const [games,setGames]=useState<Game[]>([]);
+  const [shown,setShown]=useState(0);
+  const [error,setError]=useState("");
+  const [round,setRound]=useState<number>();
+  const [copied,setCopied]=useState(false);
+  const [experimentBusy,setExperimentBusy]=useState(false);
+  const controller=useRef<AbortController | null>(null);
+  useEffect(()=>()=>controller.current?.abort(),[]);
+  useEffect(()=>{
+    if(!games.length) return;
+    const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timers=Array.from({length:games.length*6},(_,i)=>setTimeout(()=>setShown(i+1),reduce?0:1400+i*300));
+    return ()=>timers.forEach(clearTimeout);
+  },[games]);
+  const drawing= experimentBusy || pending || (games.length>0 && shown<games.length*6);
+  const current=Math.min(Math.floor(Math.max(0,shown-1)/6),games.length-1);
+  const drawn=current>=0?games[current].numbers.slice(0,shown-current*6):[];
+  async function generate() {
+    setPending(true);setError("");setGames([]);setShown(0);setCopied(false);
+    controller.current=new AbortController();
     try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          strategy,
-          count,
-          recentWindow
-        })
-      });
-
-      const payload = (await response.json()) as { games: ResultGame[] };
-      setResults(payload.games);
-    } finally {
-      setPending(false);
-    }
+      const response=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({count}),signal:controller.current.signal});
+      if(!response.ok) throw new Error("번호를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      const payload=await response.json();
+      if(!Array.isArray(payload.games)||!payload.games.length) throw new Error("추첨 결과를 확인할 수 없습니다.");
+      setGames(payload.games);setRound(payload.dataRound);
+    } catch(e) {
+      if(e instanceof Error && e.name!=="AbortError") setError(e.message);
+    } finally {setPending(false);}
   }
-
-  return (
-    <section className="panel-gold overflow-hidden p-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.35em] text-gold-300/80">Generator</p>
-        <h2 className="section-title mt-3">번호 조합 추출기</h2>
-        <p className="section-copy mt-2 text-sm">
-          전략을 선택한 뒤 여러 게임을 한 번에 생성합니다.
-        </p>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <label className="chart-card">
-            <span className="text-sm font-semibold text-white/85">추출 방식</span>
-            <select
-              value={strategy}
-              onChange={(event) => setStrategy(event.target.value as StrategyKey)}
-              className={selectClassName}
-              style={{ colorScheme: "dark" }}
-            >
-              {strategyOptions.map((option) => (
-                <option key={option.value} value={option.value} className="bg-black text-white">
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-xs text-white/55">{selectedStrategy?.description}</p>
-          </label>
-
-          <label className="chart-card">
-            <span className="text-sm font-semibold text-white/85">게임 수</span>
-            <select
-              value={count}
-              onChange={(event) => setCount(Number(event.target.value))}
-              className={selectClassName}
-              style={{ colorScheme: "dark" }}
-            >
-              {[1, 5, 10].map((value) => (
-                <option key={value} value={value} className="bg-black text-white">
-                  {value}게임
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="chart-card md:col-span-2">
-            <span className="text-sm font-semibold text-white/85">최근 가중치 범위</span>
-            <input
-              type="range"
-              min={20}
-              max={200}
-              step={10}
-              value={recentWindow}
-              onChange={(event) => setRecentWindow(Number(event.target.value))}
-              className="mt-4 w-full accent-yellow-400"
-            />
-            <p className="mt-2 text-xs text-white/55">최근 {recentWindow}회를 기준으로 계산</p>
-          </label>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={pending}
-          className="mt-6 rounded-full bg-gradient-to-r from-yellow-300 via-gold-300 to-amber-500 px-6 py-3 text-sm font-bold text-stone-900 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {pending ? "번호 계산 중..." : "번호 뽑기"}
-        </button>
-      </div>
-
-      <div className="mt-8 grid gap-4">
-        {results.slice(0, revealed).map((game, index) => (
-          <div key={`${game.numbers.join("-")}-${index}`} className="chart-card">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-gold-300/80">
-                  Game {index + 1}
-                </p>
-                <p className="mt-2 text-sm text-white/65">{game.explanation}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {game.numbers.map((number) => (
-                  <LottoBall key={`${index}-${number}`} number={number} />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  return <section id="studio" className="studio panel">
+    <div className="studio-visual">
+      <div className="studio-label"><span>01 / DRAW STUDIO</span><span className="live-label">45 BALLS · 6 PICKS</span></div>
+      <LottoMachine active={drawing} drawn={drawn}/>
+      <div className="draw-slots" aria-hidden="true">{Array.from({length:6},(_,i)=>drawn[i]?<LottoBall key={i} number={drawn[i]}/>:<span key={i} className="empty-ball">{String(i+1).padStart(2,"0")}</span>)}</div>
+    </div>
+    <div className="studio-controls">
+      <p className="eyebrow">YOUR NEXT SIX</p>
+      <h2>가능성을 돌려보세요.</h2>
+      <p className="section-copy">공을 섞고, 하나씩 꺼내고.<br/>최신 당첨 데이터를 바탕으로 나만의 조합을 만듭니다.</p>
+      <p className="fixed-strategy">최근 200회 기준 · 검증 결과에 따라 자동 추첨</p>
+      <label>게임 수<div className="count-options">{[1,5,10].map(n=><button key={n} disabled={drawing} className={count===n?"selected":""} onClick={()=>setCount(n)} aria-pressed={count===n}>{n} 게임</button>)}</div></label>
+      <button className="generate-button" disabled={drawing} onClick={generate}>{drawing?"추첨 진행 중…":"추첨 시작하기"}<span>↗</span></button>
+      <p className="control-note">중복 없는 6개 번호 · 통계 기반 조합</p>
+      <RepeatDrawExperiment disabled={drawing && !experimentBusy} onBusy={setExperimentBusy}
+        onStart={()=>{setGames([]);setShown(0);setError("");setCopied(false);}}
+        onResult={(numbers,dataRound,attempts)=>{setRound(dataRound);setGames([{numbers,explanation:`과거 당첨 조합과 ${attempts.toLocaleString("ko-KR")}번째에 일치한 뒤, 새로 ${attempts.toLocaleString("ko-KR")}번 추첨한 마지막 조합입니다.`}]);}}/>
+      {error&&<p role="alert" className="error-message">{error}</p>}
+    </div>
+    {games.length>0&&<div className="results" aria-live="polite">
+      <div className="results-heading"><h3>나의 번호 조합</h3><span>{round}회 데이터 기준</span><button disabled={drawing} onClick={async()=>{try {await navigator.clipboard.writeText(games.map((g,i)=>`게임 ${i+1}: ${g.numbers.join(", ")}`).join("\n"));setCopied(true);}catch{setError("번호 복사를 사용할 수 없습니다.");}}}>{copied?"복사 완료":"번호 복사"}</button></div>
+      {games.map((game,index)=>shown>index*6&&<div className="result-row" key={index}><div><span className="eyebrow">GAME {String(index+1).padStart(2,"0")}</span><p>{game.explanation}</p></div><div className="result-balls">{game.numbers.map((n,i)=>shown>index*6+i?<LottoBall key={n} number={n}/>:<span key={n} className="empty-ball">·</span>)}</div></div>)}
+    </div>}
+  </section>;
 }
