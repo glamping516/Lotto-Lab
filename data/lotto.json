@@ -1,5 +1,19 @@
 [
   {
+    "round": 1249,
+    "numbers": [
+      2,
+      11,
+      16,
+      25,
+      34,
+      35
+    ],
+    "bonus": 14,
+    "source": "dhlottery",
+    "updatedAt": "2026-11-08T04:22:22.075Z"
+  },
+  {
     "round": 1248,
     "numbers": [
       16,
